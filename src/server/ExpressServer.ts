@@ -66,7 +66,7 @@ export class ExpressServer {
   private setupMiddlewares() {
     this.app.use(
       cors({
-        origin: this.config.server.uiUrl,
+        origin: this.config.server.cors,
       })
     );
     this.app.use(bodyParser.json());

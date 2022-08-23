@@ -25,14 +25,14 @@ export class SocketServer {
     if (server) {
       this.server = new Server(server, {
         cors: {
-          origin: this.config.server.uiUrl,
+          origin: this.config.server.cors,
           methods: ["GET", "POST"],
         },
       });
     } else {
       this.server = new Server({
         cors: {
-          origin: this.config.server.serverUrl,
+          origin: this.config.server.cors,
           methods: ["GET", "POST"],
         },
       });
