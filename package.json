@@ -29,7 +29,8 @@
     "bump-version": "ts-node-dev --quiet --project tsconfig.node.json -- src/cli/bump-version.ts",
     "manual-publish": "./build-tools/npm_publish.sh",
     "build-vercel-pkg": "node dist/cli/build-vercel-pkg.js",
-    "serve": "serve -s build"
+    "serve": "serve -s build",
+    "run-all" : "nohup serve -l 80 -s build & npm run dev:backend"
   },
   "devDependencies": {
     "@adityahegde/typescript-test-utils": "^1.3.2",
