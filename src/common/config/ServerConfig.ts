@@ -18,7 +18,7 @@ export class ServerConfig extends Config<ServerConfig> {
 
   @Config.ConfigField("35.238.148.252")
   public socketHost: string;
-  @Config.ConfigField(9000)
+  @Config.ConfigField(8080)
   public socketPort: number;
   public socketUrl: string;
 
