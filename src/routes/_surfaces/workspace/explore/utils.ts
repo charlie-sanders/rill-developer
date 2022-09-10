@@ -1,5 +1,5 @@
 import type { DimensionDefinitionEntity } from "$common/data-modeler-state-service/entity-state-service/DimensionDefinitionStateService";
-import type { ActiveValues } from "$lib/redux-store/explore/explore-slice";
+import type { ActiveValues } from "$lib/application-state-stores/explorer-stores";
 
 // prepare the activeFilters to be sent to the server
 export function prune(
@@ -13,4 +13,10 @@ export function prune(
       actives[activeColumnId];
   }
   return filters;
+}
+
+export function getDisplayName(dimension) {
+  return dimension?.labelSingle?.length
+    ? dimension?.labelSingle
+    : dimension?.dimensionColumn;
 }

@@ -21,7 +21,7 @@ export class DatabaseTableActions extends DatabaseActions {
             }
         }
         const q = `-- wrapQueryAsTemporaryView
-            CREATE OR REPLACE TEMPORARY VIEW ${tableName} AS (${prql_query});`;
+            CREATE OR REPLACE TEMPORARY VIEW "${tableName}" AS (${prql_query});`;
         await this.databaseClient.execute(q);
     }
 
@@ -45,8 +45,9 @@ export class DatabaseTableActions extends DatabaseActions {
         tableName: string
     ): Promise<number> {
         const [cardinality] = await this.databaseClient.execute<{ count: number }>(
-            `select count(*) as count FROM '${tableName}';`
-        );
+            `select count(*) as count FROM '${tableName}';`,
+        false,
+      false);
         return cardinality.count;
     }
 

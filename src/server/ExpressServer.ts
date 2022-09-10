@@ -7,8 +7,9 @@ import type { SocketNotificationService } from "$common/socket/SocketNotificatio
 import { FileActionsController } from "$server/controllers/FileActionsController";
 import { MetricsDefinitionController } from "$server/controllers/MetricsDefinitionController";
 import { MetricsDimensionController } from "$server/controllers/MetricsDimensionController";
-import { MetricsExplorerController } from "$server/controllers/MetricsExplorerController";
 import { MetricsMeasureController } from "$server/controllers/MetricsMeasureController";
+import { MetricsViewController } from "$server/controllers/MetricsViewController";
+import { TelemetryController } from "$server/controllers/TelemetryController";
 import { SocketServer } from "$server/SocketServer";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -93,7 +94,8 @@ export class ExpressServer {
       MetricsDefinitionController,
       MetricsDimensionController,
       MetricsMeasureController,
-      MetricsExplorerController,
+      MetricsViewController,
+      TelemetryController,
     ].forEach((MetricsControllerClass) =>
       new MetricsControllerClass(
         this.config,

@@ -1,36 +1,56 @@
 <script lang="ts">
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import { dataModelerService } from "$lib/application-state-stores/application-store";
+  import { Button } from "$lib/components/button";
   import ExploreIcon from "$lib/components/icons/Explore.svelte";
   import Tooltip from "$lib/components/tooltip/Tooltip.svelte";
   import TooltipContent from "$lib/components/tooltip/TooltipContent.svelte";
-  import { getDimensionsByMetricsId } from "$lib/redux-store/dimension-definition/dimension-definition-readables";
-  import { getMeasuresByMetricsId } from "$lib/redux-store/measure-definition/measure-definition-readables";
   import { getMetricsDefReadableById } from "$lib/redux-store/metrics-definition/metrics-definition-readables";
-  import Button from "../Button.svelte";
-
-  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
-  $: measures = getMeasuresByMetricsId(metricsDefId);
-  $: dimensions = getDimensionsByMetricsId(metricsDefId);
+  import { navigationEvent } from "$lib/metrics/initMetrics";
+  import { useMetaQuery } from "$lib/svelte-query/queries/metrics-view";
 
   export let metricsDefId: string;
 
-  let tooltipText = "";
+  // query the `/meta` endpoint to get the valid measures and dimensions
+  $: metaQuery = useMetaQuery(metricsDefId);
+  $: measures = $metaQuery.data?.measures;
+  $: dimensions = $metaQuery.data?.dimensions;
+
+  $: selectedMetricsDef = getMetricsDefReadableById(metricsDefId);
+
   let buttonDisabled = true;
   let buttonStatus = "OK";
+
+  const viewDashboard = () => {
+    dataModelerService.dispatch("setActiveAsset", [
+      EntityType.MetricsExplorer,
+      metricsDefId,
+    ]);
+
+    navigationEvent.fireEvent(
+      metricsDefId,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace,
+      MetricsEventScreenName.MetricsDefinition,
+      MetricsEventScreenName.Dashboard
+    );
+  };
+
   $: if (
     $selectedMetricsDef?.sourceModelId === undefined ||
     $selectedMetricsDef?.timeDimension === undefined
   ) {
-    tooltipText = "";
     buttonDisabled = true;
     buttonStatus = "MISSING_MODEL_OR_TIMESTAMP";
-  } else if ($measures.length === 0 || $dimensions.length === 0) {
-    tooltipText = "";
+  } else if (measures?.length === 0 || dimensions?.length === 0) {
     buttonDisabled = true;
     buttonStatus = "MISSING_MEASURES_OR_DIMENSIONS";
   } else {
-    tooltipText = undefined;
     buttonDisabled = false;
   }
 </script>
@@ -41,10 +61,7 @@
     type="primary"
     disabled={buttonDisabled}
     on:click={() => {
-      dataModelerService.dispatch("setActiveAsset", [
-        EntityType.MetricsExplorer,
-        metricsDefId,
-      ]);
+      viewDashboard();
     }}>Go to Dashboard <ExploreIcon size="16px" /></Button
   >
   <TooltipContent slot="tooltip-content">

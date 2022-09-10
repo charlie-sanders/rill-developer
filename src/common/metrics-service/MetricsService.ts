@@ -13,13 +13,14 @@ import type {
   CommonFields,
   MetricsEvent,
 } from "$common/metrics-service/MetricsTypes";
+import type { BehaviourEventFactory } from "$common/metrics-service/BehaviourEventFactory";
 
 /**
  * We have DataModelerStateService as the 1st arg to have a structure for PickActionFunctions
  */
 export type MetricsEventFactoryClasses = PickActionFunctions<
   CommonFields,
-  ProductHealthEventFactory
+  ProductHealthEventFactory & BehaviourEventFactory
 >;
 export type MetricsActionDefinition = ExtractActionTypeDefinitions<
   CommonFields,
@@ -71,9 +72,8 @@ export class MetricsService
       install_id: this.config.local.installId,
       build_id: this.config.local.version ?? "",
       version: this.config.local.version ?? "",
+      is_dev: this.config.local.isDev,
       project_id: applicationState.projectId,
-      entity_type: applicationState.activeEntity?.type ?? "",
-      entity_id: applicationState.activeEntity?.id ?? "",
     };
   }
 }

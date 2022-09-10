@@ -1,4 +1,4 @@
-import type { LeaderboardValues } from "$lib/redux-store/explore/explore-slice";
+import type { LeaderboardValues } from "$lib/application-state-stores/explorer-stores";
 
 const FuzzyGroupLargeThreshold = 500;
 const FuzzyGroupSmallThreshold = 0.25;
@@ -9,11 +9,17 @@ const FuzzyGroupSmallNumber = 10;
  * Calls {@link normaliseArrayValues} for each column.
  */
 export function normaliseLeaderboardOrder(
-  leaderboard: Array<LeaderboardValues>
+  leaderboard: Array<LeaderboardValues>,
+  measureSqlName: string
 ): Array<[string, Array<string>]> {
   return leaderboard.map((l) => [
     l.dimensionName,
-    normaliseArrayValues(l.values as Array<{ value: number; label: string }>),
+    normaliseArrayValues(
+      l.values.map((val) => ({
+        value: val[measureSqlName],
+        label: val[l.dimensionName],
+      }))
+    ),
   ]);
 }
 

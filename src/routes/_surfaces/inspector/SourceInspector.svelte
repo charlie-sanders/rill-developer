@@ -2,13 +2,18 @@
   import type { DerivedTableEntity } from "$common/data-modeler-state-service/entity-state-service/DerivedTableEntityService";
   import { EntityType } from "$common/data-modeler-state-service/entity-state-service/EntityStateService";
   import type { PersistentTableEntity } from "$common/data-modeler-state-service/entity-state-service/PersistentTableEntityService";
+  import { BehaviourEventMedium } from "$common/metrics-service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "$common/metrics-service/MetricsTypes";
   import type { ApplicationStore } from "$lib/application-state-stores/application-store";
   import type { PersistentModelStore } from "$lib/application-state-stores/model-stores";
   import type {
     DerivedTableStore,
     PersistentTableStore,
   } from "$lib/application-state-stores/table-stores";
-  import Button from "$lib/components/Button.svelte";
+  import { Button } from "$lib/components/button";
   import CollapsibleSectionTitle from "$lib/components/CollapsibleSectionTitle.svelte";
   import CollapsibleTableSummary from "$lib/components/column-profile/CollapsibleTableSummary.svelte";
   import ColumnProfileNavEntry from "$lib/components/column-profile/ColumnProfileNavEntry.svelte";
@@ -23,12 +28,17 @@
   } from "$lib/redux-store/source/source-apis";
   import { selectTimestampColumnFromProfileEntity } from "$lib/redux-store/source/source-selectors";
   import { TableSourceType } from "$lib/types";
+  import { navigationEvent } from "$lib/metrics/initMetrics";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "$lib/util/formatters";
   import { getContext } from "svelte";
   import { slide } from "svelte/transition";
+
+  import PanelCTA from "$lib/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "$lib/components/panel/ResponsiveButtonText.svelte";
+  import StickToHeaderDivider from "$lib/components/panel/StickToHeaderDivider.svelte";
 
   const persistentModelStore = getContext(
     "rill:app:persistent-model-store"
@@ -66,10 +76,18 @@
     selectTimestampColumnFromProfileEntity(currentDerivedTable);
 
   const handleCreateModelFromSource = async () => {
-    await createModelForSource(
+    createModelForSource(
       $persistentModelStore.entities,
       currentTable.tableName
-    );
+    ).then((createdModelId) => {
+      navigationEvent.fireEvent(
+        createdModelId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Source,
+        MetricsEventScreenName.Model
+      );
+    });
   };
 
   const handleCreateMetric = () => {
@@ -84,7 +102,15 @@
       $persistentTableStore.entities.find(
         (table) => table.id === activeEntityID
       ).tableName
-    );
+    ).then((createdMetricsId) => {
+      navigationEvent.fireEvent(
+        createdMetricsId,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.RightPanel,
+        MetricsEventScreenName.Source,
+        MetricsEventScreenName.Dashboard
+      );
+    });
   };
 
   /** source summary information */
@@ -142,20 +168,24 @@
 <div class="table-profile">
   {#if currentTable}
     <!-- CTAs -->
-    <div
-      style:height="var(--header-height)"
-      class="px-4 flex flex-row items-center gap-x-2 justify-end"
-    >
-      <Button type="secondary" on:click={handleCreateModelFromSource}
-        >Create Model <Model size="16px" /></Button
-      >
-
+    <PanelCTA side="right" let:width>
+      <Tooltip location="left" distance={16}>
+        <Button type="secondary" on:click={handleCreateModelFromSource}>
+          <ResponsiveButtonText {width}>Create Model</ResponsiveButtonText>
+          <Model size="16px" /></Button
+        >
+        <TooltipContent slot="tooltip-content">
+          Create a model with these source columns
+        </TooltipContent>
+      </Tooltip>
       <Tooltip location="bottom" alignment="right" distance={16}>
         <Button
           type="primary"
           disabled={!timestampColumns?.length}
           on:click={handleCreateMetric}
-          >Create Dashboard<Explore size="16px" /></Button
+        >
+          <ResponsiveButtonText {width}>Create Dashboard</ResponsiveButtonText>
+          <Explore size="16px" /></Button
         >
         <TooltipContent slot="tooltip-content">
           {#if timestampColumns?.length}
@@ -165,7 +195,7 @@
           {/if}
         </TooltipContent>
       </Tooltip>
-    </div>
+    </PanelCTA>
 
     <!-- summary info -->
     <div class=" p-4 pt-2">
@@ -191,7 +221,7 @@
       </LeftRightGrid>
     </div>
 
-    <hr />
+    <StickToHeaderDivider />
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
@@ -215,6 +245,7 @@
           >
             <svelte:fragment slot="summary" let:containerWidth>
               <ColumnProfileNavEntry
+                entityId={currentTable.id}
                 indentLevel={0}
                 {containerWidth}
                 cardinality={currentDerivedTable?.cardinality ?? 0}

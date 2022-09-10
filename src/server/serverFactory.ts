@@ -26,20 +26,21 @@ import { DatabaseService } from "$common/database-service/DatabaseService";
 import { DatabaseTableActions } from "$common/database-service/DatabaseTableActions";
 import { DatabaseTimeSeriesActions } from "$common/database-service/DatabaseTimeSeriesActions";
 import { DuckDBClient } from "$common/database-service/DuckDBClient";
+import { BehaviourEventFactory } from "$common/metrics-service/BehaviourEventFactory";
 import { MetricsService } from "$common/metrics-service/MetricsService";
 import { ProductHealthEventFactory } from "$common/metrics-service/ProductHealthEventFactory";
 import { RillIntakeClient } from "$common/metrics-service/RillIntakeClient";
 import { DimensionsActions } from "$common/rill-developer-service/DimensionsActions";
 import { MeasuresActions } from "$common/rill-developer-service/MeasuresActions";
 import { MetricsDefinitionActions } from "$common/rill-developer-service/MetricsDefinitionActions";
-import { MetricsExplorerActions } from "$common/rill-developer-service/MetricsExplorerActions";
+import { MetricsViewActions } from "$common/rill-developer-service/MetricsViewActions";
 import { RillDeveloperService } from "$common/rill-developer-service/RillDeveloperService";
 import { SocketNotificationService } from "$common/socket/SocketNotificationService";
+import { initLocalConfig } from "$common/utils/initLocalConfig";
 import { ExpressServer } from "$server/ExpressServer";
 import type { RillDeveloper } from "$server/RillDeveloper";
 import { SocketServer } from "$server/SocketServer";
 import { readFileSync } from "fs";
-import { initLocalConfig } from "$common/utils/initLocalConfig";
 
 let PACKAGE_JSON = "";
 try {
@@ -93,18 +94,16 @@ export function metricsServiceFactory(
   config: RootConfig,
   dataModelerStateService: DataModelerStateService
 ) {
-  const productHealthEventFactory = new ProductHealthEventFactory(config);
-
   return new MetricsService(
     config,
     dataModelerStateService,
     new RillIntakeClient(config),
-    [productHealthEventFactory]
+    [new ProductHealthEventFactory(config), new BehaviourEventFactory(config)]
   );
 }
 
 export function dataModelerServiceFactory(config: RootConfig) {
-  config.local = initLocalConfig();
+  config.local = initLocalConfig(config.local);
   try {
     config.local.version = JSON.parse(
       readFileSync(PACKAGE_JSON).toString()
@@ -153,7 +152,7 @@ export function rillDeveloperServiceFactory(rillDeveloper: RillDeveloper) {
       MetricsDefinitionActions,
       DimensionsActions,
       MeasuresActions,
-      MetricsExplorerActions,
+      MetricsViewActions,
     ].map(
       (RillDeveloperActionsClass) =>
         new RillDeveloperActionsClass(
