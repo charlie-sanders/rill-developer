@@ -46,8 +46,8 @@ export class DatabaseTableActions extends DatabaseActions {
     ): Promise<number> {
         const [cardinality] = await this.databaseClient.execute<{ count: number }>(
             `select count(*) as count FROM '${tableName}';`,
-        false,
-      false);
+            false,
+            false);
         return cardinality.count;
     }
 
@@ -114,16 +114,20 @@ export class DatabaseTableActions extends DatabaseActions {
                 const sql = prql.to_sql(query);
                 return this.databaseClient.prepare(sql);
             } catch (err) {
-                throw new Error(
+                throw new Error('PRQL error : ' +
                     err.toString()
                         .replace(/\n/g, "<br>")
                         .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
                         .replace(/\s/g, "&nbsp;")
-                        .replace('"Error: ', '')
+                        .replace(/Error:\s/g, '')
                 );
             }
         } else {
-            return this.databaseClient.prepare(query);
+            try {
+                return this.databaseClient.prepare(query);
+            } catch (err) {
+                throw new Error('SQL error : ' + err.toString());
+            }
         }
 
     }
