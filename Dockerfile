@@ -1,5 +1,9 @@
 # syntax = docker/dockerfile:1.1-experimental
-FROM rilldata/duckdb:0.4.0
+FROM ubuntu:focal
+EXPOSE 8080/tcp
+EXPOSE 8080/udp
+EXPOSE 3000/tcp
+EXPOSE 3000/udp
 
 WORKDIR /app
 
@@ -12,14 +16,26 @@ COPY build-tools build-tools/
 COPY web-local/build-tools web-local/build-tools/
 COPY web-local/src web-local/src/
 
+RUN apt-get update && apt-get install -y curl unzip make g++
+
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+RUN apt-get install -y nodejs
+
+RUN npm install duckdb@0.4.0
+RUN npm install -g serve
+
+
 RUN echo "Installing npm dependencies..." && \
-    npm install -d
+    npm install -d -ws
 
 COPY web-local/static web-local/static/
 RUN echo "Compiling the code..." && \
     npm run build
 
 RUN echo "CommonJS voodoo" && \
+    /app/build-tools/replace_package_type.sh module commonjs
+
+RUN echo "CommonJS voodoo" && cd web-local && \
     /app/build-tools/replace_package_type.sh module commonjs
 
 RUN echo '#!/bin/bash\nnode dist/cli/data-modeler-cli.js "$@"' > /usr/bin/rill && \
