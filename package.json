@@ -24,5 +24,8 @@
       "package.json",
       "web-local/package.json"
     ]
+  },
+  "dependencies": {
+    "prql": "^0.0.0"
   }
 }

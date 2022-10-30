@@ -2,6 +2,7 @@ import type { DatabaseMetadata } from "./DatabaseMetadata";
 import type { ProfileColumn } from "@rilldata/web-local/lib/types";
 import { guidGenerator } from "@rilldata/web-local/lib/util/guid";
 import { DatabaseActions } from "./DatabaseActions";
+import * as prql from "prql-js/dist/node/";
 
 function escapeColumn(columnName: string): string {
   return columnName.replace(/"/g, "'");
@@ -9,12 +10,31 @@ function escapeColumn(columnName: string): string {
 
 export class DatabaseTableActions extends DatabaseActions {
   public async createViewOfQuery(
-    metadata: DatabaseMetadata,
-    tableName: string,
-    query: string
+      metadata: DatabaseMetadata,
+      tableName: string,
+      query: string
   ): Promise<void> {
-    await this.databaseClient.execute(`-- wrapQueryAsTemporaryView
-            CREATE OR REPLACE TEMPORARY VIEW "${tableName}" AS (${query});`);
+    let prql_query = query;
+    if (query.toLowerCase().startsWith('from')) {
+      try {
+        const ptos = query.replace('\\n', '|').replace('||', '|');
+        const { sql , error } = prql.compile(ptos);
+        if ( error ) {
+          return Promise.reject(error.message);
+        }
+        else {
+          prql_query = sql;
+        }
+
+      } catch (err) {
+        // console.log('prql_exception --> createViewOfQuery --> ', err);
+        return Promise.reject(err);
+      }
+    }
+    const q = `-- wrapQueryAsTemporaryView
+            CREATE OR REPLACE TEMPORARY VIEW "${tableName}" AS (${prql_query});`;
+    // console.log('prql_log --> createViewOfQiery -->', q);
+    await this.databaseClient.execute(q);
   }
 
   public async getFirstNOfTable(
@@ -77,7 +97,29 @@ export class DatabaseTableActions extends DatabaseActions {
     metadata: DatabaseMetadata,
     query: string
   ): Promise<void> {
-    return this.databaseClient.prepare(query);
+    if (query.trim().toLowerCase().startsWith('from')) {
+      try {
+        const { sql , error } = prql.compile(query);
+        if (error) {
+          throw new Error(error.message);
+        }
+        else {
+          const _sql = sql;
+          // console.log('prql_log -- validateQuery:  ', _sql);
+          return this.databaseClient.prepare(_sql);
+        }
+      } catch (err) {
+        // console.log('prql_exception -- validateQuery: ', err.toString());
+        throw new Error('PRQL error : ' +  err.toString() );
+
+      }
+    } else {
+      try {
+        return this.databaseClient.prepare(query);
+      } catch (err) {
+        throw new Error('SQL error : ' + err.toString());
+      }
+    }
   }
 
   public async renameTable(
